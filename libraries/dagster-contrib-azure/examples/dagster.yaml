@@ -1,0 +1,61 @@
+# Example Dagster instance configuration for Azure Container Instances Run Launcher
+
+dagster_home: /tmp/dagster_home
+
+storage:
+  postgres:
+    postgres_url:
+      env: DAGSTER_PG_URL
+
+run_launcher:
+  module: dagster_contrib_azure.container_instances.run_launcher
+  class: ContainerInstancesRunLauncher
+  config:
+    subscription_id:
+      env: AZURE_SUBSCRIPTION_ID
+    resource_group:
+      env: AZURE_RESOURCE_GROUP  
+    location:
+      env: AZURE_LOCATION
+    container_image: "myregistry.azurecr.io/my-dagster-image:latest"
+    cpu_limit: 1.0
+    memory_limit: 2.0
+    container_group_by_code_location:
+      # Simple configuration - just specify container group name
+      my-simple-location: "my-container-group"
+      
+      # Advanced configuration with overrides
+      my-advanced-location:
+        name: "my-advanced-container-group"
+        subscription_id: "override-subscription-id"
+        resource_group: "override-resource-group"
+        location: "eastus2"
+        # Custom environment variables
+        DATABASE_URL:
+          env: MY_DATABASE_URL
+        SECRET_KEY:
+          secret_name: "my-secret-name"  # From Azure Key Vault
+      
+      # Configuration with environment-specific overrides
+      production:
+        name: "prod-dagster-runner"
+        resource_group:
+          env: PROD_RESOURCE_GROUP
+        location: "eastus"
+      
+      staging:
+        name: "staging-dagster-runner"
+        resource_group: "staging-rg"
+        location: "westus"
+
+    run_job_retry:
+      wait: 10
+      timeout: 300
+    run_timeout: 7200  # 2 hours
+
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+
+run_monitoring:
+  enabled: true
